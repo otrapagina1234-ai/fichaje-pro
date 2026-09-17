@@ -1,0 +1,6 @@
+{
+  "name": "Fichaje Pro",
+  "description": "Aplicación de control de jornada y fichaje laboral con turnos continuo o partido, geolocalización GPS, sincronización en la nube y reportes oficiales.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

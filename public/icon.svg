@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="tealGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#008b87" />
+      <stop offset="100%" stop-color="#005d5a" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-opacity="0.25" />
+    </filter>
+  </defs>
+  
+  <!-- Fondo redondeado estilo App Icon -->
+  <rect width="512" height="512" rx="115" fill="url(#tealGrad)" />
+  
+  <!-- Reloj principal con sombra -->
+  <g filter="url(#shadow)">
+    <!-- Bisel dorado exterior -->
+    <circle cx="256" cy="245" r="160" fill="#ffd700" stroke="#d4af37" stroke-width="4" />
+    <!-- Esfera interior crema/blanco -->
+    <circle cx="256" cy="245" r="142" fill="#fcfbf7" />
+    
+    <!-- Marcas horarias (12, 3, 6, 9) -->
+    <rect x="252" y="112" width="8" height="18" rx="4" fill="#005d5a" />
+    <rect x="252" y="360" width="8" height="18" rx="4" fill="#005d5a" />
+    <rect x="123" y="241" width="18" height="8" rx="4" fill="#005d5a" />
+    <rect x="371" y="241" width="18" height="8" rx="4" fill="#005d5a" />
+    
+    <!-- Agujas del reloj marcando jornada -->
+    <!-- Aguja horaria -->
+    <line x1="256" y1="245" x2="195" y2="190" stroke="#005d5a" stroke-width="12" stroke-linecap="round" />
+    <!-- Aguja minutera -->
+    <line x1="256" y1="245" x2="310" y2="160" stroke="#005d5a" stroke-width="8" stroke-linecap="round" />
+    <!-- Punto central -->
+    <circle cx="256" cy="245" r="14" fill="#ffd700" stroke="#005d5a" stroke-width="4" />
+  </g>
+  
+  <!-- Placa / Insignia de Fichaje Validado (Checkmark verde) -->
+  <g filter="url(#shadow)">
+    <circle cx="360" cy="350" r="54" fill="#28a745" stroke="#ffffff" stroke-width="6" />
+    <path d="M336 350 L352 366 L386 332" fill="none" stroke="#ffffff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+  
+  <!-- Texto PRO en la base -->
+  <rect x="196" y="420" width="120" height="34" rx="17" fill="#ffffff" opacity="0.9" />
+  <text x="256" y="444" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="20" fill="#005d5a" text-anchor="middle" letter-spacing="3">PRO</text>
+</svg>

@@ -1,0 +1,26 @@
+{
+  "entities": {
+    "Fichaje": {
+      "title": "Fichaje",
+      "description": "Registro de jornada laboral de un empleado",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Identificador único del fichaje" },
+        "claveId": { "type": "string", "description": "Clave de fecha en formato fichaje-YYYY-M-D" },
+        "empleadoNombre": { "type": "string", "description": "Nombre del empleado" },
+        "empleadoDni": { "type": "string", "description": "DNI o NIF del empleado" },
+        "empresaCodigo": { "type": "string", "description": "Código identificador de la empresa para aislar datos" },
+        "fecha": { "type": "string", "description": "Timestamp ISO de creación" },
+        "datos": { "type": "object", "description": "Horas, estado, origen y coordenadas GPS" },
+        "actualizadoEn": { "type": "string", "description": "Fecha y hora legible de última actualización" }
+      },
+      "required": ["id", "claveId", "empleadoNombre", "datos"]
+    }
+  },
+  "firestore": {
+    "/fichajes/{fichajeId}": {
+      "schema": "Fichaje",
+      "description": "Colección de fichajes sincronizados en tiempo real entre empleados y el panel del jefe"
+    }
+  }
+}

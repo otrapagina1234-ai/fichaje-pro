@@ -1,0 +1,37 @@
+{
+  "packageId": "com.fichajepro.app",
+  "host": "ais-pre-62v33bwpk7ldmffbuxfpxr-563675846625.europe-west2.run.app",
+  "name": "Fichaje Pro",
+  "launcherName": "Fichaje Pro",
+  "themeColor": "#007D7A",
+  "themeColorDark": "#004D4A",
+  "navigationColor": "#007D7A",
+  "navigationColorDark": "#004D4A",
+  "navigationDividerColor": "#00000000",
+  "navigationDividerColorDark": "#00000000",
+  "backgroundColor": "#F4F1EA",
+  "enableNotifications": true,
+  "startUrl": "/",
+  "iconUrl": "https://ais-pre-62v33bwpk7ldmffbuxfpxr-563675846625.europe-west2.run.app/icon-512.png",
+  "maskableIconUrl": "https://ais-pre-62v33bwpk7ldmffbuxfpxr-563675846625.europe-west2.run.app/icon-maskable-512.png",
+  "appVersionName": "18.21.0",
+  "appVersionCode": 18210,
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://ais-pre-62v33bwpk7ldmffbuxfpxr-563675846625.europe-west2.run.app/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {
+    "locationDelegation": {
+      "enabled": true
+    },
+    "playBilling": {
+      "enabled": false
+    }
+  },
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false
+}

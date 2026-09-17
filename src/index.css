@@ -1,0 +1,37 @@
+@import "tailwindcss";
+
+:root {
+  --bg-app: #f7f6dd;
+  --teal-header: #007d7a;
+  --box-empty: #eae7c9;
+  --color-trabajo: #d4edda;
+  --color-vacaciones: #cce5ff;
+  --color-libre: #fff3cd;
+  --color-baja: #f8d7da;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg-app);
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+/* Custom scrollbar for lists */
+.calendario-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+.calendario-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.calendario-scroll::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 125, 122, 0.2);
+  border-radius: 4px;
+}
+
+.fila-dia.tipo-trabajo { background-color: var(--color-trabajo) !important; }
+.fila-dia.tipo-vacaciones { background-color: var(--color-vacaciones) !important; }
+.fila-dia.tipo-libre { background-color: var(--color-libre) !important; }
+.fila-dia.tipo-baja { background-color: var(--color-baja) !important; }
