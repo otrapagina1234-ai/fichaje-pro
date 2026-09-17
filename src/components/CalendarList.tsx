@@ -114,11 +114,6 @@ export const CalendarList: React.FC<CalendarListProps> = ({
                 title={`${diaItem.diaSemana} ${diaItem.dia}${diaItem.esHoy ? ' (Hoy)' : ''}`}
               >
                 <span>{diaItem.diaSemana} {diaItem.dia}</span>
-                {diaItem.esHoy && (
-                  <span className="text-[9px] px-1 py-0.5 bg-[#007d7a] text-white rounded font-black tracking-tighter leading-none">
-                    HOY
-                  </span>
-                )}
               </div>
 
             {/* Inputs */}

@@ -55,6 +55,31 @@ export const AuditModal: React.FC<AuditModalProps> = ({
           <span>{titulo || `Fichaje e Info: ${dia} de ${mesNombre}`}</span>
         </div>
 
+        {/* Info de fecha de anotación / auditoría */}
+        {(() => {
+          let fechaAnotacionTxt = '';
+          if (data.ultimaModificacion) {
+            const d = new Date(data.ultimaModificacion);
+            if (!isNaN(d.getTime())) {
+              fechaAnotacionTxt = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()} (${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')})`;
+            }
+          } else if (data.fechaRegistro) {
+            const d = new Date(data.fechaRegistro);
+            if (!isNaN(d.getTime())) {
+              fechaAnotacionTxt = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()} (${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')})`;
+            }
+          }
+
+          return fechaAnotacionTxt ? (
+            <div className="bg-slate-50 border border-slate-200 rounded-md p-2 text-[11px] text-slate-700 flex flex-col gap-0.5">
+              <div className="flex justify-between items-center">
+                <span className="font-bold text-slate-600">📝 Registrado / Modificado:</span>
+                <span className="font-semibold text-slate-900">{fechaAnotacionTxt}</span>
+              </div>
+            </div>
+          ) : null;
+        })()}
+
         <div id="modal-audit-cuerpo" className="flex flex-col gap-2.5 my-1">
           {registrosActivos.length === 0 ? (
             <div className="text-center py-4 text-xs text-gray-500 italic">

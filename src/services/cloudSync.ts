@@ -4,6 +4,9 @@ import {
   obtenerFichajesDesdeFirestore,
   suscribirFichajesEnTiempoReal,
   validarConexionFirestore,
+  eliminarFichajeDeFirestore,
+  eliminarFichajesDeEmpleadoFirestore,
+  eliminarTodosFichajesEmpresaFirestore,
 } from './firebase';
 
 const CLAVE_PROVEEDOR = 'fichaje_cloud_provider';
@@ -97,6 +100,41 @@ export function estaConectadoNube(): boolean {
 }
 
 /**
+ * Helper para obtener la fecha ISO equivalente al claveId del fichaje (ej: fichaje-2026-8-10)
+ */
+export function calcularFechaIsoDesdeClave(claveId: string): string {
+  if (claveId) {
+    const match = claveId.match(/fichaje-(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if (match) {
+      const y = parseInt(match[1], 10);
+      const m = parseInt(match[2], 10); // 0-indexed (0 = Ene, 8 = Sep)
+      const d = parseInt(match[3], 10);
+      const dateObj = new Date(y, m, d, 12, 0, 0);
+      if (!isNaN(dateObj.getTime())) {
+        return dateObj.toISOString();
+      }
+    }
+  }
+  return new Date().toISOString();
+}
+
+/**
+ * Helper para obtener el string de fecha YYYY-MM-DD equivalente al claveId
+ */
+export function calcularDiaStringDesdeClave(claveId: string): string {
+  if (claveId) {
+    const match = claveId.match(/fichaje-(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if (match) {
+      const y = match[1];
+      const m = String(parseInt(match[2], 10) + 1).padStart(2, '0');
+      const d = String(parseInt(match[3], 10)).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+  }
+  return new Date().toISOString().split('T')[0];
+}
+
+/**
  * Sincronización de fichaje individual con la nube (Firebase Firestore).
  * Persistencia en cola local y guardado inmediato en Firestore.
  */
@@ -114,14 +152,23 @@ export async function sincronizarConNube(
   const codEmpresa = (empresaCodigo || obtenerCodigoEmpresa()).trim().toUpperCase();
   const nombreFinal = (nombreUsuario || '').trim() || 'Empleado';
   const prefijoEmpresa = codEmpresa ? `${codEmpresa}_` : '';
+  const fechaIso = calcularFechaIsoDesdeClave(claveId);
+  const diaStr = calcularDiaStringDesdeClave(claveId);
+
+  const ahoraIso = new Date().toISOString();
   const item: CloudFichajeItem = {
     id: `${prefijoEmpresa}${nombreFinal.replace(/\s+/g, '_')}_${claveId}`,
     claveId,
     empleadoNombre: nombreFinal,
     empleadoDni: (dniUsuario || '').trim(),
     empresaCodigo: codEmpresa,
-    fecha: new Date().toISOString(),
-    datos,
+    fecha: fechaIso,
+    datos: {
+      ...datos,
+      dia: diaStr,
+      fechaRegistro: datos.fechaRegistro || ahoraIso,
+      ultimaModificacion: ahoraIso,
+    },
     actualizadoEn: new Date().toLocaleString(),
   };
 
@@ -289,5 +336,57 @@ async function sincronizarConSupabase(item: CloudFichajeItem): Promise<void> {
 async function consultarEmpleadosSupabase(): Promise<CloudFichajeItem[]> {
   return obtenerCacheEmpleados();
 }
+/**
+ * Elimina un fichaje por ID
+ */
+export async function eliminarFichajeNube(id: string): Promise<void> {
+  const proveedor = obtenerProveedorActivo();
+  if (proveedor === 'firebase') {
+    await eliminarFichajeDeFirestore(id);
+  }
+  try {
+    const lista = obtenerCacheEmpleados().filter((i) => i.id !== id);
+    localStorage.setItem(CLAVE_CACHE_EMPLEADOS, JSON.stringify(lista));
+  } catch (e) {
+    console.warn("Error eliminando de caché local:", e);
+  }
+}
+
+/**
+ * Elimina todos los fichajes de un empleado específico
+ */
+export async function eliminarFichajesDeEmpleadoNube(empleadoNombre: string, empresaCodigo?: string): Promise<void> {
+  const proveedor = obtenerProveedorActivo();
+  const codEmpresa = (empresaCodigo || obtenerCodigoEmpresa()).trim().toUpperCase();
+  if (proveedor === 'firebase') {
+    await eliminarFichajesDeEmpleadoFirestore(empleadoNombre, codEmpresa);
+  }
+  try {
+    const nameUpper = empleadoNombre.trim().toLowerCase();
+    const lista = obtenerCacheEmpleados().filter(
+      (i) => (i.empleadoNombre || '').trim().toLowerCase() !== nameUpper
+    );
+    localStorage.setItem(CLAVE_CACHE_EMPLEADOS, JSON.stringify(lista));
+  } catch (e) {
+    console.warn("Error eliminando empleado de caché:", e);
+  }
+}
+
+/**
+ * Elimina todos los fichajes de una empresa (por ejemplo datos de pruebas)
+ */
+export async function eliminarTodosFichajesNube(empresaCodigo?: string): Promise<void> {
+  const proveedor = obtenerProveedorActivo();
+  const codEmpresa = (empresaCodigo || obtenerCodigoEmpresa()).trim().toUpperCase();
+  if (proveedor === 'firebase') {
+    await eliminarTodosFichajesEmpresaFirestore(codEmpresa);
+  }
+  try {
+    localStorage.removeItem(CLAVE_CACHE_EMPLEADOS);
+  } catch (e) {
+    console.warn("Error eliminando caché:", e);
+  }
+}
+
 export { validarConexionFirestore };
 

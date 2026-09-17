@@ -10,6 +10,9 @@ export interface FichajeData {
   est: EstadoDia;
   t: string;
   nota?: string;
+  dia?: string;
+  fechaRegistro?: string;
+  ultimaModificacion?: string;
   origen?: Record<string, OrigenPunch>;
   gps?: Record<string, string>;
 }

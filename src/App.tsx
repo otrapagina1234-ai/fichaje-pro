@@ -68,6 +68,13 @@ export default function App() {
     return (localStorage.getItem('config-empresa-codigo') || '').trim().toUpperCase();
   });
 
+  const [tempEmpresaCodigoEmpleado, setTempEmpresaCodigoEmpleado] = useState(empresaCodigo);
+  const [mensajeEmpleadoVinculado, setMensajeEmpleadoVinculado] = useState(false);
+
+  useEffect(() => {
+    setTempEmpresaCodigoEmpleado(empresaCodigo);
+  }, [empresaCodigo]);
+
   const handleEmpresaCodigoChange = (val: string) => {
     const codeUpper = val.trim().toUpperCase();
     setEmpresaCodigo(codeUpper);
@@ -101,6 +108,8 @@ export default function App() {
   const [horasPorMesAno, setHorasPorMesAno] = useState<number[]>(new Array(12).fill(0));
   const [totalSemana, setTotalSemana] = useState('00:00');
   const [totalMes, setTotalMes] = useState('00:00');
+  const [jefeTotalSemana, setJefeTotalSemana] = useState('00:00');
+  const [jefeTotalMes, setJefeTotalMes] = useState('00:00');
   const [semanasDesglose, setSemanasDesglose] = useState<SemanaItem[]>([]);
 
   // Aplicar colores CSS variables dinámicamente
@@ -798,7 +807,6 @@ export default function App() {
 
   // Navegación de anterior / siguiente según vista activa
   const handlePrev = () => {
-    if (rol === 'jefe') return;
     setFechaActual((prev) => {
       const d = new Date(prev);
       if (vistaActual === 'ano') {
@@ -815,7 +823,6 @@ export default function App() {
   };
 
   const handleNext = () => {
-    if (rol === 'jefe') return;
     setFechaActual((prev) => {
       const d = new Date(prev);
       if (vistaActual === 'ano') {
@@ -880,11 +887,13 @@ export default function App() {
         }}
       />
 
-      {/* Panel totales */}
-      <TotalsPanel
-        totalSemana={rol === 'jefe' ? '---' : totalSemana}
-        totalMes={rol === 'jefe' ? '---' : totalMes}
-      />
+      {/* Panel totales (Solo para vista de empleado, en modo jefe sobra porque se muestra en cada tarjeta de empleado) */}
+      {rol !== 'jefe' && (
+        <TotalsPanel
+          totalSemana={totalSemana}
+          totalMes={totalMes}
+        />
+      )}
 
       {/* Zona acción superior (Fichar & semanas) */}
       {rol !== 'jefe' && (
@@ -918,6 +927,11 @@ export default function App() {
           onOpenMenu={() => setMenuOpen(true)}
           empresaCodigo={empresaCodigo}
           onEmpresaCodigoChange={handleEmpresaCodigoChange}
+          fechaActual={fechaActual}
+          onTotalesCalculados={(sem, mes) => {
+            setJefeTotalSemana(sem);
+            setJefeTotalMes(mes);
+          }}
         />
       ) : (
         <CalendarList

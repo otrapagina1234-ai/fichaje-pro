@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { RolTipo, TurnoTipo, ColoresConfig } from '../types';
 
 interface SideMenuProps {
@@ -60,6 +60,19 @@ export const SideMenu: React.FC<SideMenuProps> = ({
   const [desplegableCompartir, setDesplegableCompartir] = useState(false);
   const [desplegableSeguridad, setDesplegableSeguridad] = useState(false);
   const [codigoCopiado, setCodigoCopiado] = useState(false);
+  const [codigoInputEmpleado, setCodigoInputEmpleado] = useState(empresaCodigo);
+  const [guardadoEmpleadoExito, setGuardadoEmpleadoExito] = useState(false);
+
+  useEffect(() => {
+    setCodigoInputEmpleado(empresaCodigo);
+  }, [empresaCodigo]);
+
+  const handleGuardarCodigoEmpleado = () => {
+    const codeUpper = codigoInputEmpleado.trim().toUpperCase();
+    onEmpresaCodigoChange(codeUpper);
+    setGuardadoEmpleadoExito(true);
+    setTimeout(() => setGuardadoEmpleadoExito(false), 3000);
+  };
 
   if (!isOpen) return null;
 
@@ -147,53 +160,92 @@ export const SideMenu: React.FC<SideMenuProps> = ({
 
         {/* Código de Empresa (Aislamiento de empresas) */}
         {rol === 'empleado' && (
-          <div className="my-2 p-2.5 bg-amber-50/80 rounded-lg border border-amber-200 flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-amber-900 flex items-center gap-1">
-                <span>🔑</span> Código de Empresa:
+          <div className="my-3 p-3 bg-amber-50 rounded-xl border border-amber-300 flex flex-col gap-2.5 shadow-xs">
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-xs font-bold text-amber-950 flex items-center gap-1.5">
+                <span className="text-sm">🔑</span> Clave de tu Empresa:
               </span>
+              {guardadoEmpleadoExito ? (
+                <span className="text-[11px] font-bold px-2 py-0.5 bg-emerald-600 text-white rounded-md shadow-2xs">
+                  ✓ Guardada
+                </span>
+              ) : empresaCodigo ? (
+                <span className="text-[11px] font-bold px-2 py-0.5 bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-md">
+                  ✓ {empresaCodigo}
+                </span>
+              ) : (
+                <span className="text-[11px] font-bold px-2 py-0.5 bg-amber-200 text-amber-900 rounded-md">
+                  Sin Clave
+                </span>
+              )}
             </div>
-            <input
-              type="text"
-              id="input-empresa-codigo"
-              value={empresaCodigo}
-              onChange={(e) => onEmpresaCodigoChange(e.target.value.toUpperCase())}
-              placeholder="Ej: EMPRESA-1 o AMP2026"
-              className="w-full p-1.5 text-xs font-bold tracking-wider rounded border border-amber-300 bg-white focus:outline-none focus:border-amber-600 uppercase"
-            />
-            <span className="text-[10px] text-amber-800 leading-tight">
-              Introduce el código facilitado por tu empresa para vincular tus fichajes con el panel de tu jefe.
-            </span>
+
+            <div className="flex flex-col gap-2 w-full">
+              <input
+                type="text"
+                id="input-empresa-codigo-empleado"
+                value={codigoInputEmpleado}
+                onChange={(e) => setCodigoInputEmpleado(e.target.value.toUpperCase())}
+                placeholder="Ej: AMP2026"
+                className="w-full p-2.5 text-xs font-black tracking-wider rounded-lg border border-amber-300 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 uppercase text-amber-950 shadow-2xs"
+              />
+              <button
+                type="button"
+                onClick={handleGuardarCodigoEmpleado}
+                className="w-full py-2 px-3 bg-amber-700 hover:bg-amber-800 active:bg-amber-900 text-white rounded-lg text-xs font-bold cursor-pointer transition-colors shadow-2xs flex items-center justify-center gap-1.5"
+              >
+                💾 Guardar Clave de Empresa
+              </button>
+            </div>
+
+            <p className="text-[11px] text-amber-900 leading-snug">
+              Introduce el código facilitado por tu empresa y pulsa <strong>Guardar Clave</strong> para vincular tus fichajes.
+            </p>
           </div>
         )}
 
         {rol === 'jefe' && (
-          <div className="my-2 p-2.5 bg-blue-50/80 rounded-lg border border-blue-200 flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-blue-900 flex items-center gap-1">
-                <span>🏢</span> Clave de tu Empresa:
+          <div className="my-3 p-3 bg-blue-50 rounded-xl border border-blue-300 flex flex-col gap-2.5 shadow-xs">
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-xs font-bold text-blue-950 flex items-center gap-1.5">
+                <span className="text-sm">🏢</span> Clave de tu Empresa:
               </span>
               {empresaCodigo && (
                 <button
                   type="button"
                   onClick={copiarCodigo}
-                  className="text-[10px] px-2 py-0.5 bg-blue-600 text-white font-bold rounded hover:bg-blue-700 cursor-pointer transition-colors"
+                  className="text-[11px] px-2.5 py-1 bg-blue-700 hover:bg-blue-800 text-white font-bold rounded-md cursor-pointer transition-colors shadow-2xs shrink-0"
                 >
-                  {codigoCopiado ? '✓ Copiado' : 'Copiar'}
+                  {codigoCopiado ? '✓ Copiado' : '📋 Copiar'}
                 </button>
               )}
             </div>
-            <input
-              type="text"
-              id="input-empresa-codigo-jefe"
-              value={empresaCodigo}
-              onChange={(e) => onEmpresaCodigoChange(e.target.value.toUpperCase())}
-              placeholder="Crea un código (Ej: MIEMPRESA2026)"
-              className="w-full p-1.5 text-xs font-bold tracking-wider rounded border border-blue-300 bg-white focus:outline-none focus:border-blue-600 uppercase"
-            />
-            <span className="text-[10px] text-blue-800 leading-tight">
-              Tus empleados deben ingresar este mismo código para que sus fichajes se sincronicen exclusivamente contigo y no se mezclen con otras empresas.
-            </span>
+
+            <div className="flex flex-col gap-2 w-full">
+              <input
+                type="text"
+                id="input-empresa-codigo-jefe"
+                value={empresaCodigo}
+                onChange={(e) => onEmpresaCodigoChange(e.target.value.toUpperCase())}
+                placeholder="Ej: AMP2026"
+                className="w-full p-2.5 text-xs font-black tracking-wider rounded-lg border border-blue-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 uppercase text-blue-950 shadow-2xs"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const randomNum = Math.floor(1000 + Math.random() * 9000);
+                  onEmpresaCodigoChange(`AMP-${randomNum}`);
+                }}
+                className="w-full py-2 px-3 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white font-bold text-xs rounded-lg cursor-pointer transition-colors shadow-2xs flex items-center justify-center gap-1.5"
+                title="Generar código automático"
+              >
+                ⚡ Generar Clave Automática
+              </button>
+            </div>
+
+            <p className="text-[11px] text-blue-900 leading-snug">
+              Tus empleados deben ingresar exactamente este código en sus teléfonos para vincular sus fichajes con tu panel.
+            </p>
           </div>
         )}
 
@@ -207,32 +259,20 @@ export const SideMenu: React.FC<SideMenuProps> = ({
           Servicio Nube & Sincronización
         </div>
 
-        {/* Tarjeta de Servicio Nube (Unificada y transparente) */}
-        <div className="p-2.5 bg-teal-50/60 rounded-lg border border-teal-200 flex flex-col gap-2 mb-2">
+        {/* Tarjeta de Servicio Nube (Automática e ininterrumpida) */}
+        <div className="p-2.5 bg-teal-50/60 rounded-lg border border-teal-200 flex flex-col gap-1.5 mb-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               <span className="text-xs font-bold text-teal-900">Base de Datos Cloud</span>
             </div>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-teal-100 text-teal-800">
-              {nubeConectado ? 'En directo' : 'Pausado'}
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
+              ⚡ Activa 24/7
             </span>
           </div>
           <p className="text-[10px] text-teal-800 leading-relaxed">
-            Servicio oficial en la nube de alta disponibilidad con copias en tiempo real y cifrado SSL.
+            Sincronización en tiempo real automatizada e ininterrumpida con servidor seguro y cifrado SSL.
           </p>
-          <button
-            type="button"
-            id="btn-alternar-nube"
-            onClick={onAlternarNube}
-            className={`w-full py-1 px-2 rounded text-[11px] font-bold transition-colors cursor-pointer border ${
-              nubeConectado
-                ? 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
-                : 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700'
-            }`}
-          >
-            {nubeConectado ? '⏸️ Pausar Sincronización' : '▶️ Reanudar Sincronización'}
-          </button>
         </div>
 
         <div className="text-[11px] text-gray-400 font-bold uppercase tracking-wider mt-1 mb-1">

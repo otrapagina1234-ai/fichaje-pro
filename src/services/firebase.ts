@@ -6,6 +6,7 @@ import {
   collection,
   setDoc,
   getDocs,
+  deleteDoc,
   onSnapshot,
   query,
 } from 'firebase/firestore';
@@ -116,6 +117,74 @@ export function suscribirFichajesEnTiempoReal(
   } catch (err) {
     console.error('❌ [Firebase] No se pudo inicializar listener en tiempo real:', err);
     return () => {};
+  }
+}
+
+/**
+ * Elimina un fichaje por ID de Firestore
+ */
+export async function eliminarFichajeDeFirestore(id: string): Promise<void> {
+  try {
+    const docRef = doc(db, 'fichajes', id);
+    await deleteDoc(docRef);
+    console.log('🗑️ [Firebase Firestore] Fichaje eliminado:', id);
+  } catch (error) {
+    console.error('❌ [Firebase Firestore] Error al eliminar fichaje:', error);
+    throw error;
+  }
+}
+
+/**
+ * Elimina todos los fichajes de un empleado específico
+ */
+export async function eliminarFichajesDeEmpleadoFirestore(empleadoNombre: string, empresaCodigo?: string): Promise<void> {
+  try {
+    const colRef = collection(db, 'fichajes');
+    const snapshot = await getDocs(colRef);
+    const batchPromises: Promise<void>[] = [];
+    const nameUpper = empleadoNombre.trim().toLowerCase();
+    const codeUpper = empresaCodigo ? empresaCodigo.trim().toUpperCase() : '';
+
+    snapshot.forEach((d) => {
+      const data = d.data() as CloudFichajeItem;
+      const matchName = (data.empleadoNombre || '').trim().toLowerCase() === nameUpper;
+      const matchCode = !codeUpper || (data.empresaCodigo || '').trim().toUpperCase() === codeUpper;
+      if (matchName && matchCode) {
+        batchPromises.push(deleteDoc(doc(db, 'fichajes', d.id)));
+      }
+    });
+
+    await Promise.all(batchPromises);
+    console.log(`🗑️ [Firebase Firestore] Eliminados todos los fichajes del empleado: ${empleadoNombre}`);
+  } catch (error) {
+    console.error('❌ Error al eliminar fichajes de empleado:', error);
+    throw error;
+  }
+}
+
+/**
+ * Elimina todos los fichajes de una empresa (por ejemplo datos de pruebas)
+ */
+export async function eliminarTodosFichajesEmpresaFirestore(empresaCodigo?: string): Promise<void> {
+  try {
+    const colRef = collection(db, 'fichajes');
+    const snapshot = await getDocs(colRef);
+    const batchPromises: Promise<void>[] = [];
+    const codeUpper = empresaCodigo ? empresaCodigo.trim().toUpperCase() : '';
+
+    snapshot.forEach((d) => {
+      const data = d.data() as CloudFichajeItem;
+      const matchCode = !codeUpper || (data.empresaCodigo || '').trim().toUpperCase() === codeUpper;
+      if (matchCode) {
+        batchPromises.push(deleteDoc(doc(db, 'fichajes', d.id)));
+      }
+    });
+
+    await Promise.all(batchPromises);
+    console.log(`🗑️ [Firebase Firestore] Eliminados todos los fichajes de la empresa ${empresaCodigo || 'global'}`);
+  } catch (error) {
+    console.error('❌ Error al eliminar todos los fichajes:', error);
+    throw error;
   }
 }
 
