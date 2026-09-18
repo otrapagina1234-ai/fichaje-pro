@@ -805,6 +805,24 @@ export default function App() {
     reader.readAsText(f);
   };
 
+  // Guardar perfil de empleado y sincronizar una única copia completa y limpia a la nube
+  const handleGuardarPerfil = useCallback(
+    (nuevoNombre: string, nuevoDni: string) => {
+      const nomLimpio = nuevoNombre.trim();
+      const dniLimpio = nuevoDni.trim().toUpperCase();
+
+      setNombre(nomLimpio);
+      setDni(dniLimpio);
+      localStorage.setItem('config-nombre', nomLimpio);
+      localStorage.setItem('config-dni', dniLimpio);
+
+      if (nomLimpio.length >= 2 && (rol === 'empleado' || rol === 'particular')) {
+        sincronizarTodosLosFichajesLocales(rol, nomLimpio, dniLimpio, empresaCodigo);
+      }
+    },
+    [rol, empresaCodigo]
+  );
+
   // Navegación de anterior / siguiente según vista activa
   const handlePrev = () => {
     setFechaActual((prev) => {
@@ -974,14 +992,13 @@ export default function App() {
         onNombreChange={(val) => {
           setNombre(val);
           localStorage.setItem('config-nombre', val);
-          sincronizarTodosLosFichajesLocales(rol, val, dni, empresaCodigo);
         }}
         dni={dni}
         onDniChange={(val) => {
           setDni(val);
           localStorage.setItem('config-dni', val);
-          sincronizarTodosLosFichajesLocales(rol, nombre, val, empresaCodigo);
         }}
+        onGuardarPerfil={handleGuardarPerfil}
         rol={rol}
         onRolChange={(val) => {
           setRol(val);

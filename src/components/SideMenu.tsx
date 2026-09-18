@@ -8,6 +8,7 @@ interface SideMenuProps {
   onNombreChange: (val: string) => void;
   dni: string;
   onDniChange: (val: string) => void;
+  onGuardarPerfil?: (nuevoNombre: string, nuevoDni: string) => void;
   rol: RolTipo;
   onRolChange: (val: RolTipo) => void;
   empresaCodigo: string;
@@ -36,6 +37,7 @@ export const SideMenu: React.FC<SideMenuProps> = ({
   onNombreChange,
   dni,
   onDniChange,
+  onGuardarPerfil,
   rol,
   onRolChange,
   empresaCodigo,
@@ -63,9 +65,57 @@ export const SideMenu: React.FC<SideMenuProps> = ({
   const [codigoInputEmpleado, setCodigoInputEmpleado] = useState(empresaCodigo);
   const [guardadoEmpleadoExito, setGuardadoEmpleadoExito] = useState(false);
 
+  // Estados locales para evitar subidas a la nube letra a letra
+  const [inputNombre, setInputNombre] = useState(nombre);
+  const [inputDni, setInputDni] = useState(dni);
+  const [guardadoPerfilExito, setGuardadoPerfilExito] = useState(false);
+
+  useEffect(() => {
+    setInputNombre(nombre);
+  }, [nombre]);
+
+  useEffect(() => {
+    setInputDni(dni);
+  }, [dni]);
+
   useEffect(() => {
     setCodigoInputEmpleado(empresaCodigo);
   }, [empresaCodigo]);
+
+  const handleConfirmarPerfil = () => {
+    const nombreLimpio = inputNombre.trim();
+    const dniLimpio = inputDni.trim().toUpperCase();
+
+    if (!nombreLimpio) {
+      alert('Por favor, introduce tu Nombre y Apellidos antes de confirmar.');
+      return;
+    }
+
+    if (onGuardarPerfil) {
+      onGuardarPerfil(nombreLimpio, dniLimpio);
+    } else {
+      onNombreChange(nombreLimpio);
+      onDniChange(dniLimpio);
+    }
+
+    setGuardadoPerfilExito(true);
+    setTimeout(() => setGuardadoPerfilExito(false), 3500);
+  };
+
+  const handleCerrarMenu = () => {
+    // Si el usuario modificó y olvidó pulsar el botón, confirmar datos limpios al salir
+    const nombreLimpio = inputNombre.trim();
+    const dniLimpio = inputDni.trim().toUpperCase();
+    if (nombreLimpio && (nombreLimpio !== nombre || dniLimpio !== dni)) {
+      if (onGuardarPerfil) {
+        onGuardarPerfil(nombreLimpio, dniLimpio);
+      } else {
+        onNombreChange(nombreLimpio);
+        onDniChange(dniLimpio);
+      }
+    }
+    onClose();
+  };
 
   const handleGuardarCodigoEmpleado = () => {
     const codeUpper = codigoInputEmpleado.trim().toUpperCase();
@@ -89,7 +139,7 @@ export const SideMenu: React.FC<SideMenuProps> = ({
       <div
         id="menu-overlay"
         className="fixed inset-0 bg-black/50 z-40 transition-opacity"
-        onClick={onClose}
+        onClick={handleCerrarMenu}
       />
 
       <div
@@ -101,7 +151,7 @@ export const SideMenu: React.FC<SideMenuProps> = ({
             ⚙️ Ajustes de Fichaje
           </span>
           <button
-            onClick={onClose}
+            onClick={handleCerrarMenu}
             className="w-7 h-7 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center justify-center font-bold text-sm cursor-pointer"
             aria-label="Cerrar"
           >
@@ -121,10 +171,10 @@ export const SideMenu: React.FC<SideMenuProps> = ({
           <input
             type="text"
             id="input-nombre-global"
-            value={nombre}
-            onChange={(e) => onNombreChange(e.target.value)}
+            value={inputNombre}
+            onChange={(e) => setInputNombre(e.target.value)}
             placeholder="Nombre y Apellidos"
-            className="flex-1 p-1 text-xs font-semibold rounded border border-gray-300 focus:outline-none focus:border-teal-700"
+            className="flex-1 p-1.5 text-xs font-semibold rounded border border-gray-300 focus:outline-none focus:border-teal-700 bg-white"
           />
         </div>
 
@@ -136,11 +186,34 @@ export const SideMenu: React.FC<SideMenuProps> = ({
           <input
             type="text"
             id="input-dni-global"
-            value={dni}
-            onChange={(e) => onDniChange(e.target.value)}
+            value={inputDni}
+            onChange={(e) => setInputDni(e.target.value.toUpperCase())}
             placeholder="Documento ID"
-            className="flex-1 p-1 text-xs font-semibold rounded border border-gray-300 focus:outline-none focus:border-teal-700"
+            className="flex-1 p-1.5 text-xs font-semibold rounded border border-gray-300 focus:outline-none focus:border-teal-700 bg-white"
           />
+        </div>
+
+        {/* Botón explícito para Confirmar y Guardar Perfil */}
+        <div className="pt-2 pb-1.5 border-b border-gray-100 w-full">
+          <button
+            type="button"
+            onClick={handleConfirmarPerfil}
+            className={`w-full py-2 px-3 text-white text-xs font-bold rounded-lg cursor-pointer transition-all shadow-2xs flex items-center justify-center gap-1.5 ${
+              guardadoPerfilExito ? 'bg-emerald-600 hover:bg-emerald-700' : 'hover:opacity-90 active:scale-98'
+            }`}
+            style={{ backgroundColor: guardadoPerfilExito ? undefined : 'var(--teal-header)' }}
+          >
+            {guardadoPerfilExito ? '✅ ¡Datos Confirmados y Guardados!' : '💾 Confirmar y Guardar Perfil'}
+          </button>
+          {guardadoPerfilExito ? (
+            <p className="text-[10px] text-emerald-700 font-bold text-center mt-1">
+              ✓ Perfil guardado. Se ha sincronizado una única copia completa y limpia.
+            </p>
+          ) : (
+            <p className="text-[10px] text-gray-500 text-center mt-1">
+              Pulsa para confirmar tus datos completos antes de sincronizar.
+            </p>
+          )}
         </div>
 
         {/* Rol / Modo */}

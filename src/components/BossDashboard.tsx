@@ -8,7 +8,7 @@ import {
   eliminarTodosFichajesNube,
 } from '../services/cloudSync';
 import { CloudFichajeItem } from '../types';
-import { obtenerDiasDeLaSemana, minsATexto } from '../utils/time';
+import { obtenerDiasDeLaSemana, minsATexto, MESES_NOMBRES } from '../utils/time';
 
 interface BossDashboardProps {
   onOpenMenu: () => void;
@@ -24,6 +24,16 @@ interface EmpleadoGrupo {
   fichajes: CloudFichajeItem[];
   totalHoras: string;
   ultimoFichaje: string;
+}
+
+interface EmpleadoMesGrupo {
+  claveMes: string;
+  anio: number;
+  mes: number;
+  nombreMes: string;
+  totalHoras: string;
+  fichajes: CloudFichajeItem[];
+  esUltimo: boolean;
 }
 
 interface ModalBorradoConfig {
@@ -48,6 +58,7 @@ export const BossDashboard: React.FC<BossDashboardProps> = ({
   const [codigoInput, setCodigoInput] = useState(empresaCodigo);
   const [guardadoExitosa, setGuardadoExitosa] = useState(false);
   const [empleadosExpandidos, setEmpleadosExpandidos] = useState<Record<string, boolean>>({});
+  const [mesesExpandidos, setMesesExpandidos] = useState<Record<string, boolean>>({});
   const [empleadoSeleccionadoNombre, setEmpleadoSeleccionadoNombre] = useState<string | null>(null);
   const [modalBorrado, setModalBorrado] = useState<ModalBorradoConfig | null>(null);
   const [procesandoBorrado, setProcesandoBorrado] = useState(false);
@@ -352,6 +363,57 @@ export const BossDashboard: React.FC<BossDashboardProps> = ({
     };
   }, [extraerFechaItem]);
 
+  // Agrupar fichajes del empleado por meses (cronológico descendente)
+  const agruparFichajesPorMes = useCallback((fichajesList: CloudFichajeItem[]): EmpleadoMesGrupo[] => {
+    const mapa = new Map<string, { anio: number; mes: number; fichajes: CloudFichajeItem[] }>();
+
+    fichajesList.forEach((item) => {
+      const d = extraerFechaItem(item);
+      let anio = d ? d.getFullYear() : new Date().getFullYear();
+      let mes = d ? d.getMonth() : new Date().getMonth();
+
+      const k = `${anio}-${String(mes).padStart(2, '0')}`;
+      if (!mapa.has(k)) {
+        mapa.set(k, { anio, mes, fichajes: [] });
+      }
+      mapa.get(k)!.fichajes.push(item);
+    });
+
+    // Ordenar meses de más reciente a más antiguo
+    const clavesOrdenadas = Array.from(mapa.keys()).sort((a, b) => b.localeCompare(a));
+
+    return clavesOrdenadas.map((k, index) => {
+      const datosMes = mapa.get(k)!;
+      // Asegurar que dentro de cada mes los días están ordenados por fecha descendente
+      datosMes.fichajes.sort((a, b) => {
+        const timeA = extraerFechaItem(a)?.getTime() || 0;
+        const timeB = extraerFechaItem(b)?.getTime() || 0;
+        return timeB - timeA;
+      });
+
+      const nombreMes = `${MESES_NOMBRES[datosMes.mes] || 'Mes'} ${datosMes.anio}`;
+      const totalHoras = sumarMinutos(datosMes.fichajes);
+
+      return {
+        claveMes: k,
+        anio: datosMes.anio,
+        mes: datosMes.mes,
+        nombreMes,
+        totalHoras,
+        fichajes: datosMes.fichajes,
+        esUltimo: index === 0, // El primer mes es el más reciente
+      };
+    });
+  }, [extraerFechaItem]);
+
+  const toggleExpandirMes = (nombreEmpleado: string, claveMes: string, esUltimo: boolean) => {
+    const key = `${nombreEmpleado}_${claveMes}`;
+    setMesesExpandidos((prev) => {
+      const estadoActual = prev[key] !== undefined ? prev[key] : esUltimo;
+      return { ...prev, [key]: !estadoActual };
+    });
+  };
+
   const generarInformeEmpleadoText = (
     grupo: EmpleadoGrupo,
     resumen: { sem: string; mes: string; total: string }
@@ -546,18 +608,14 @@ export const BossDashboard: React.FC<BossDashboardProps> = ({
 
       {/* Resumen General de KPIs */}
       {registros.length > 0 && (
-        <div className="grid grid-cols-3 gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200 shadow-2xs text-center">
+        <div className="grid grid-cols-2 gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200 shadow-2xs text-center">
           <div className="flex flex-col items-center">
-            <span className="text-[10px] uppercase font-bold text-slate-500">Empleados</span>
+            <span className="text-[10px] uppercase font-bold text-slate-500">Empleados Registrados</span>
             <span className="text-sm font-black text-slate-800">👤 {gruposEmpleados.length}</span>
           </div>
-          <div className="flex flex-col items-center border-x border-slate-200 px-1">
+          <div className="flex flex-col items-center border-l border-slate-200 pl-1">
             <span className="text-[10px] uppercase font-bold text-slate-500">Total Fichajes</span>
             <span className="text-sm font-black text-teal-700">📁 {registros.length}</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <span className="text-[10px] uppercase font-bold text-slate-500">Horas Totales</span>
-            <span className="text-sm font-black text-blue-800">⏱️ {totalHorasGlobal}h</span>
           </div>
         </div>
       )}
@@ -666,7 +724,7 @@ export const BossDashboard: React.FC<BossDashboardProps> = ({
                               Período activo
                             </span>
                           </div>
-                          <div className="grid grid-cols-3 gap-2 text-center">
+                          <div className="grid grid-cols-2 gap-2 text-center">
                             <div className="bg-white p-2 rounded-lg border border-teal-100/80 flex flex-col items-center shadow-2xs">
                               <span className="text-[9px] uppercase font-bold text-slate-500">Esta Semana</span>
                               <span className="text-xs sm:text-sm font-black text-teal-800 mt-0.5">📅 {resumen.sem}h</span>
@@ -674,10 +732,6 @@ export const BossDashboard: React.FC<BossDashboardProps> = ({
                             <div className="bg-white p-2 rounded-lg border border-teal-100/80 flex flex-col items-center shadow-2xs">
                               <span className="text-[9px] uppercase font-bold text-slate-500">Este Mes</span>
                               <span className="text-xs sm:text-sm font-black text-blue-800 mt-0.5">🗓️ {resumen.mes}h</span>
-                            </div>
-                            <div className="bg-white p-2 rounded-lg border border-teal-100/80 flex flex-col items-center shadow-2xs">
-                              <span className="text-[9px] uppercase font-bold text-slate-500">Total Acumulado</span>
-                              <span className="text-xs sm:text-sm font-black text-slate-800 mt-0.5">⏱️ {resumen.total}h</span>
                             </div>
                           </div>
 
@@ -714,97 +768,161 @@ export const BossDashboard: React.FC<BossDashboardProps> = ({
                       );
                     })()}
 
-                    <div className="text-[11px] font-bold text-slate-600 px-1 pt-0.5">
-                      Histórico de Fichajes ({grupo.fichajes.length}):
-                    </div>
+                    {/* Fichajes estructurados por meses */}
+                    {(() => {
+                      const mesesEmpleado = agruparFichajesPorMes(grupo.fichajes);
+                      return (
+                        <div className="flex flex-col gap-2.5 pt-1">
+                          <div className="text-[11px] font-bold text-slate-700 px-1 flex items-center justify-between">
+                            <span>📅 Histórico por Meses ({mesesEmpleado.length} mes{mesesEmpleado.length > 1 ? 'es' : ''}):</span>
+                            <span className="text-[10px] text-slate-500 font-normal">📁 {grupo.fichajes.length} fichaje(s)</span>
+                          </div>
 
-                    <div className="flex flex-col gap-2">
-                      {grupo.fichajes.map((item) => {
-                        const audit = obtenerInfoAuditoria(item);
-                        return (
-                          <div
-                            key={item.id}
-                            className="bg-white border border-slate-200 rounded-xl p-3 flex flex-col gap-2 shadow-2xs hover:border-teal-300 transition-colors"
-                          >
-                            {/* Fila Superior: Fecha, Horas totales, Origen, Alerta a posteriori y Botón Eliminar */}
-                            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-1.5">
-                              <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-                                <span className="font-bold text-xs text-slate-900">
-                                  📅 {audit.diaJornadaStr}
-                                </span>
-                                <span className="text-[11px] font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded-md border border-teal-200 shrink-0">
-                                  ⏱️ {item.datos.t || '00:00'} hrs
-                                </span>
-                                <span
-                                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 ${
-                                    audit.esAutomatico
-                                      ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                                      : 'bg-amber-50 text-amber-900 border border-amber-200'
+                          {mesesEmpleado.map((mesGrupo) => {
+                            const keyMes = `${grupo.nombre}_${mesGrupo.claveMes}`;
+                            const estaMesExpandido = mesesExpandidos[keyMes] !== undefined
+                              ? mesesExpandidos[keyMes]
+                              : mesGrupo.esUltimo; // El último mes viene desplegado entero por defecto
+
+                            return (
+                              <div
+                                key={mesGrupo.claveMes}
+                                className={`rounded-xl border transition-all overflow-hidden ${
+                                  mesGrupo.esUltimo
+                                    ? 'border-teal-300 bg-white shadow-xs'
+                                    : 'border-slate-200 bg-slate-50/70 shadow-2xs'
+                                }`}
+                              >
+                                {/* Cabecera del Mes */}
+                                <div
+                                  onClick={() => toggleExpandirMes(grupo.nombre, mesGrupo.claveMes, mesGrupo.esUltimo)}
+                                  className={`p-2.5 flex items-center justify-between gap-2 cursor-pointer transition-colors ${
+                                    mesGrupo.esUltimo
+                                      ? 'bg-gradient-to-r from-teal-50 to-white hover:bg-teal-50/80 border-b border-teal-200/60'
+                                      : 'bg-white hover:bg-slate-100 border-b border-slate-200/60'
                                   }`}
                                 >
-                                  {audit.esAutomatico ? '🤖 Botón Fichar' : '✍️ Manual'}
-                                </span>
-                                {audit.esAposteriori && (
-                                  <span
-                                    className="text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 px-1.5 py-0.5 rounded shrink-0"
-                                    title={`Anotado o modificado el ${audit.fechaAnotacionSoloDia || audit.fechaAnotacionStr}`}
-                                  >
-                                    ⚠️ Anotado el {audit.fechaAnotacionSoloDia || 'posterior'}
-                                  </span>
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <span className="text-sm">🗓️</span>
+                                    <span className="font-bold text-xs text-slate-900 truncate">
+                                      {mesGrupo.nombreMes}
+                                    </span>
+                                    {mesGrupo.esUltimo && (
+                                      <span className="text-[9px] font-bold px-1.5 py-0.2 bg-teal-100 text-teal-800 border border-teal-300 rounded shrink-0">
+                                        Último / En curso
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    <span className="text-[11px] font-extrabold text-teal-800 bg-teal-50 px-2 py-0.5 rounded-md border border-teal-200">
+                                      ⏱️ {mesGrupo.totalHoras} hrs
+                                    </span>
+                                    <span className="text-[10px] font-semibold text-slate-500 hidden sm:inline">
+                                      ({mesGrupo.fichajes.length} días)
+                                    </span>
+                                    <span className="text-xs text-slate-500 font-bold ml-1">
+                                      {estaMesExpandido ? '🔼' : '🔽'}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* Lista de Fichajes de este Mes */}
+                                {estaMesExpandido && (
+                                  <div className="p-2 flex flex-col gap-2 bg-slate-50/40">
+                                    {mesGrupo.fichajes.map((item) => {
+                                      const audit = obtenerInfoAuditoria(item);
+                                      return (
+                                        <div
+                                          key={item.id}
+                                          className="bg-white border border-slate-200 rounded-xl p-3 flex flex-col gap-2 shadow-2xs hover:border-teal-300 transition-colors"
+                                        >
+                                          {/* Fila Superior: Fecha, Horas totales, Origen, Alerta a posteriori y Botón Eliminar */}
+                                          <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-1.5">
+                                            <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                                              <span className="font-bold text-xs text-slate-900">
+                                                📅 {audit.diaJornadaStr}
+                                              </span>
+                                              <span className="text-[11px] font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded-md border border-teal-200 shrink-0">
+                                                ⏱️ {item.datos.t || '00:00'} hrs
+                                              </span>
+                                              <span
+                                                className={`text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 ${
+                                                  audit.esAutomatico
+                                                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                                                    : 'bg-amber-50 text-amber-900 border border-amber-200'
+                                                }`}
+                                              >
+                                                {audit.esAutomatico ? '🤖 Botón Fichar' : '✍️ Manual'}
+                                              </span>
+                                              {audit.esAposteriori && (
+                                                <span
+                                                  className="text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 px-1.5 py-0.5 rounded shrink-0"
+                                                  title={`Anotado o modificado el ${audit.fechaAnotacionSoloDia || audit.fechaAnotacionStr}`}
+                                                >
+                                                  ⚠️ Anotado el {audit.fechaAnotacionSoloDia || 'posterior'}
+                                                </span>
+                                              )}
+                                            </div>
+                                            <button
+                                              type="button"
+                                              onClick={() =>
+                                                setModalBorrado({
+                                                  tipo: 'fichaje',
+                                                  id: item.id,
+                                                  nombre: grupo.nombre,
+                                                })
+                                              }
+                                              className="p-1 text-slate-400 hover:text-rose-600 cursor-pointer transition-colors shrink-0"
+                                              title="Borrar este fichaje de la nube"
+                                            >
+                                              🗑️
+                                            </button>
+                                          </div>
+
+                                          {/* Fila Inferior: Horarios (Entrada/Salida/GPS/Notas) y Botón Detalle */}
+                                          <div className="flex items-center justify-between gap-2 pt-0.5">
+                                            <div className="text-[11px] text-slate-600 flex items-center gap-1.5 flex-wrap min-w-0">
+                                              <span className="font-semibold text-slate-800">
+                                                🟢 {item.datos.e1 || '--:--'} - 🔴 {item.datos.s1 || '--:--'}
+                                              </span>
+                                              {(item.datos.e2 || item.datos.s2) && (
+                                                <span className="font-semibold text-slate-800">
+                                                  | 🟢 {item.datos.e2 || '--:--'} - 🔴 {item.datos.s2 || '--:--'}
+                                                </span>
+                                              )}
+                                              {item.datos.gps && Object.keys(item.datos.gps).length > 0 && (
+                                                <span className="text-blue-600 font-bold bg-blue-50 px-1.5 py-0.5 rounded text-[10px] shrink-0">
+                                                  📍 GPS
+                                                </span>
+                                              )}
+                                              {item.datos.nota && (
+                                                <span className="text-amber-800 font-bold bg-amber-50 px-1.5 py-0.5 rounded text-[10px] shrink-0">
+                                                  📝 Nota
+                                                </span>
+                                              )}
+                                            </div>
+
+                                            <button
+                                              type="button"
+                                              onClick={() => setDetalleItem(item)}
+                                              className="py-1 px-2.5 text-[11px] font-bold text-white rounded-md hover:opacity-90 active:scale-95 cursor-pointer shadow-2xs shrink-0 whitespace-nowrap"
+                                              style={{ backgroundColor: 'var(--teal-header)' }}
+                                            >
+                                              👁️ Detalle
+                                            </button>
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
                                 )}
                               </div>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setModalBorrado({
-                                    tipo: 'fichaje',
-                                    id: item.id,
-                                    nombre: grupo.nombre,
-                                  })
-                                }
-                                className="p-1 text-slate-400 hover:text-rose-600 cursor-pointer transition-colors shrink-0"
-                                title="Borrar este fichaje de la nube"
-                              >
-                                🗑️
-                              </button>
-                            </div>
-
-                            {/* Fila Inferior: Horarios (Entrada/Salida/GPS/Notas) y Botón Detalle */}
-                            <div className="flex items-center justify-between gap-2 pt-0.5">
-                              <div className="text-[11px] text-slate-600 flex items-center gap-1.5 flex-wrap min-w-0">
-                                <span className="font-semibold text-slate-800">
-                                  🟢 {item.datos.e1 || '--:--'} - 🔴 {item.datos.s1 || '--:--'}
-                                </span>
-                                {(item.datos.e2 || item.datos.s2) && (
-                                  <span className="font-semibold text-slate-800">
-                                    | 🟢 {item.datos.e2 || '--:--'} - 🔴 {item.datos.s2 || '--:--'}
-                                  </span>
-                                )}
-                                {item.datos.gps && Object.keys(item.datos.gps).length > 0 && (
-                                  <span className="text-blue-600 font-bold bg-blue-50 px-1.5 py-0.5 rounded text-[10px] shrink-0">
-                                    📍 GPS
-                                  </span>
-                                )}
-                                {item.datos.nota && (
-                                  <span className="text-amber-800 font-bold bg-amber-50 px-1.5 py-0.5 rounded text-[10px] shrink-0">
-                                    📝 Nota
-                                  </span>
-                                )}
-                              </div>
-
-                              <button
-                                type="button"
-                                onClick={() => setDetalleItem(item)}
-                                className="py-1 px-2.5 text-[11px] font-bold text-white rounded-md hover:opacity-90 active:scale-95 cursor-pointer shadow-2xs shrink-0 whitespace-nowrap"
-                                style={{ backgroundColor: 'var(--teal-header)' }}
-                              >
-                                👁️ Detalle
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
               </div>
